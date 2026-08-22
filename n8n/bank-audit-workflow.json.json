@@ -1,0 +1,364 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        880,
+        -320
+      ],
+      "id": "75d3fe54-d406-415f-93ce-ae3f3a946bb9",
+      "name": "When chat message received",
+      "webhookId": "0eb8e679-31c3-4271-aa11-a3bd3d09e48c"
+    },
+    {
+      "parameters": {
+        "model": "llama3.1:latest",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        1088,
+        -64
+      ],
+      "id": "91dfb5aa-f429-4829-ba97-74c6308d4ede",
+      "name": "Ollama Chat Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "UdPy4yczej93JC2X",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        1200,
+        -80
+      ],
+      "id": "2533f963-c33d-4724-bd1f-c19531a8af74",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chat-agent",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -240,
+        224
+      ],
+      "id": "912e8220-b5da-4d50-b25a-6a659cab9822",
+      "name": "Webhook",
+      "webhookId": "bab59cdc-7172-4005-8a9d-0a331dbc8874"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "You are Maya, a senior data analyst at Bank of India. You answer questions about branch performance data stored in PostgreSQL.\n\n════════════════════════════════════\nDATABASE SCHEMA\n════════════════════════════════════\nTable: branch_data\n- branch_id: TEXT (format: BOI0001 to BOI0500)\n- branch_scale: INTEGER (1 to 6)\n- category: TEXT (M=Metro, SU=Semi-Urban, R=Rural, U=Urban)\n- total_advances_lakhs: NUMERIC\n- total_deposits_lakhs: NUMERIC\n- savings_deposits_lakhs: NUMERIC\n- current_deposits_lakhs: NUMERIC\n- total_casa_lakhs: NUMERIC\n- retail_term_deposits_lakhs: NUMERIC\n\n════════════════════════════════════\nTOOL USAGE — MANDATORY\n════════════════════════════════════\nYou have ONE tool: execute_db_query\nYou MUST call this tool for EVERY question. No exceptions.\nYou CANNOT answer from memory or prior context.\n\n════════════════════════════════════\nSQL RULES — NEVER BREAK THESE\n════════════════════════════════════\n1. ALWAYS use single quotes for text values: 'BOI0180' not \"BOI0180\"\n2. For totals: SELECT SUM(column) FROM branch_data;\n3. For counts: SELECT COUNT(*) FROM branch_data WHERE category = 'U';\n4. For specific branch: SELECT * FROM branch_data WHERE branch_id = 'BOI0001';\n5. For highest/lowest: ORDER BY column DESC/ASC LIMIT 1\n6. For averages: SELECT ROUND(AVG(column)::NUMERIC, 2) FROM branch_data;\n7. Copy branch IDs EXACTLY as the user writes them — never modify\n\n════════════════════════════════════\nRESPONSE RULES — NEVER BREAK THESE\n════════════════════════════════════\n1. ALWAYS wait for tool result before answering\n2. NEVER show JSON, tool calls, or internal reasoning to the user\n3. NEVER show \"Thought:\", \"Action:\", \"Action Input:\", or \"Please wait\"\n4. ALWAYS respond in natural conversational English\n5. ALWAYS include the actual number/value from the tool result\n6. NEVER use placeholder numbers like 123.45\n\n════════════════════════════════════\nRESPONSE FORMAT — ALWAYS USE THIS\n════════════════════════════════════\nBad: \"U\"\nBad: \"Final Answer: U\"\nBad: {\"name\": \"execute_db_query\"...}\nBad: \"Please wait for the result\"\n\nGood: \"Branch BOI0180 belongs to the Urban (U) category.\"\nGood: \"There are 127 Urban (U) category branches in the dataset.\"\nGood: \"The total deposits across all branches amount to 38,479,933 lakhs.\"\nGood: \"Branch BOI0469 has the highest savings deposits at 51,649 lakhs, and it is a Rural (R) category branch with a scale of 1.\"\n\n════════════════════════════════════\nEXAMPLE INTERACTIONS\n════════════════════════════════════\nUser: \"what is the category of BOI0180\"\nSQL: SELECT category, branch_scale FROM branch_data WHERE branch_id = 'BOI0180';\nAnswer: \"Branch BOI0180 is an Urban (U) category branch with a scale of [X].\"\n\nUser: \"how many Metro branches do I have\"\nSQL: SELECT COUNT(*) FROM branch_data WHERE category = 'M';\nAnswer: \"You have [X] Metro (M) category branches in your dataset.\"\n\nUser: \"what are total deposits\"\nSQL: SELECT SUM(total_deposits_lakhs) FROM branch_data;\nAnswer: \"The total deposits across all 500 branches amount to [X] lakhs.\"\n\nUser: \"which branch has highest CASA\"\nSQL: SELECT branch_id, category, total_casa_lakhs FROM branch_data ORDER BY total_casa_lakhs DESC LIMIT 1;\nAnswer: \"Branch [ID] has the highest CASA deposits at [X] lakhs. It is a [category] branch.\"\n\nUser: \"average advances for Rural branches\"\nSQL: SELECT ROUND(AVG(total_advances_lakhs)::NUMERIC, 2) FROM branch_data WHERE category = 'R';\nAnswer: \"The average advances for Rural (R) branches is [X] lakhs.\"",
+          "maxIterations": 3
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1104,
+        -304
+      ],
+      "id": "a72a6b95-289b-41e2-b21b-c1ddad57f5ae",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Execute a SQL query in PostgresRun a SQL SELECT query. Parameter 'input' must be a valid PostgreSQL SELECT statement using single quotes for string values.",
+        "operation": "executeQuery",
+        "query": "{{ $fromAI('input') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        1360,
+        -80
+      ],
+      "id": "8debe324-c24d-4215-8928-0aba34a91b12",
+      "name": "execute_db_query1",
+      "credentials": {
+        "postgres": {
+          "id": "8YMjhae0qVePwF4s",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "ingest",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "f800f8eb-f2d0-47d9-940b-dc09a7a7ae0a"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "ingest"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "391d191a-42db-47d2-ac32-331ccc50ac34",
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "analyze",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "analyze"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -64,
+        0
+      ],
+      "id": "a2516ef1-ff47-4cf1-9fdc-2648c0f90d61",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        96,
+        -160
+      ],
+      "id": "017becd7-14cf-4161-8823-a955331c6743",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a precise data ingestion assistant for a banking audit system. Your sole responsibility is to process the raw bank branch data provided to you and insert it into the database using the `insert_branch_data` tool.\n\nINSTRUCTIONS:\n1. Review the provided raw data (which has been extracted from a file).\n2. For EVERY individual branch row found in the data, you MUST call the `insert_branch_data` tool. Do not skip any rows.\n3. Map the raw data fields to the tool's arguments exactly as follows:\n   - branch_id: The unique identifier for the branch\n   - branch_scale: The scale of the branch \n   - category: The branch category\n   - advances: The total advances (in lakhs)\n   - deposits: The total deposits (in lakhs)\n   - savings: The savings deposits (in lakhs)\n   - current_dep: The current deposits (in lakhs)\n   - casa: The total CASA (in lakhs)\n   - retail_td: The retail term deposits (in lakhs)\n   - report_date: The date of the report (format as YYYY-MM-DD)\n\nIf the raw data is missing a report_date, use today's date. Execute the tool for every row individually. Do not provide conversational filler; only execute the tool.",
+        "options": {
+          "systemMessage": "Process this batch of audit data:\n{{ $json }}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        352,
+        -208
+      ],
+      "id": "a5dddd4e-b734-4cb3-ac1c-6b86c9e83913",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "model": "llama3.1:latest",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        304,
+        128
+      ],
+      "id": "000c7806-5b99-4ef8-a25e-a5255906b57e",
+      "name": "Ollama Chat Model1",
+      "credentials": {
+        "ollamaApi": {
+          "id": "UdPy4yczej93JC2X",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO branch_data (\n    branch_id, branch_scale, category, total_advances_lakhs, \n    total_deposits_lakhs, savings_deposits_lakhs, current_deposits_lakhs, \n    total_casa_lakhs, retail_term_deposits_lakhs, report_date\n) VALUES (\n    {{ $fromAI('branch_id') }}, {{ $fromAI('branch_scale') }}, {{ $fromAI('category') }}, \n    {{ $fromAI('advances') }}, {{ $fromAI('deposits') }}, {{ $fromAI('savings') }}, \n    {{ $fromAI('current_dep') }}, {{ $fromAI('casa') }}, {{ $fromAI('retail_td') }}, \n    {{ $fromAI('report_date') }}\n) ON CONFLICT (branch_id, report_date) DO UPDATE SET \n    total_advances_lakhs = EXCLUDED.total_advances_lakhs;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        544,
+        32
+      ],
+      "id": "8b1ab259-1732-4d96-9417-49ead9f3bd29",
+      "name": "insert_branch_data",
+      "credentials": {
+        "postgres": {
+          "id": "8YMjhae0qVePwF4s",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        []
+      ]
+    },
+    "execute_db_query1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "insert_branch_data": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "c97823b7-e65d-48e6-a501-24f0606b1e3f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "dafa96f607c5b4d8129374eda6bab0816bc35b936a0ac3f8aba58c0ae0e4ee8a"
+  },
+  "nodeGroups": [],
+  "id": "iBeKuDD7kBopoUFR",
+  "tags": []
+}
