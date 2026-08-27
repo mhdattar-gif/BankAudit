@@ -1,0 +1,15 @@
+{
+  "name": "AuditAI",
+  "short_name": "AuditAI",
+  "description": "Enterprise Bank Internal Audit Intelligence",
+  "icons": [
+    {
+      "src": "/auditai-logo.png",
+      "sizes": "any",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#0f766e",
+  "background_color": "#0b1f33",
+  "display": "standalone"
+}
