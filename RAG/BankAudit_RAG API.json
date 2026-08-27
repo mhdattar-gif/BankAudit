@@ -1,0 +1,558 @@
+{
+  "name": "BankAudit_RAG API",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        80,
+        32
+      ],
+      "id": "b4691e83-005f-47b0-9a57-d315d486d5fd",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO rag_documents (content, metadata, embedding)\nVALUES ($1, $2::jsonb, $3::vector);",
+        "options": {
+          "queryReplacement": "={{ [\n  $json.content,\n  JSON.stringify({ source: $json.source }),\n  JSON.stringify($json.embedding)\n] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        1328,
+        32
+      ],
+      "id": "1317f7a5-e100-4c2b-949a-652ecc93429d",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "id": "arTMyAqfoRECzE1C",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  metadata->>'source' AS source,\n  COUNT(*) AS chunks\nFROM rag_documents\nGROUP BY metadata->>'source'\nORDER BY source;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        1728,
+        64
+      ],
+      "id": "b867ae11-612e-4019-9ed2-83c0d1b93280",
+      "name": "Execute a SQL query1",
+      "credentials": {
+        "postgres": {
+          "id": "arTMyAqfoRECzE1C",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:11434/api/embeddings",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"model\": \"nomic-embed-text\",\n  \"prompt\": \"What are bank audit procedures?\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1904,
+        16
+      ],
+      "id": "ae5df2d3-734a-4c45-8c38-19179b27143d",
+      "name": "HTTP Request1",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n    id,\n    content,\n    metadata,\n    1 - (embedding <=> $1::vector) AS similarity\nFROM rag_documents\nORDER BY embedding <=> $1::vector\nLIMIT 3;",
+        "options": {
+          "queryReplacement": "={{ [JSON.stringify($json.embedding)] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        2064,
+        16
+      ],
+      "id": "24ecbd25-1c45-4653-aedd-5f1b7193e18c",
+      "name": "Execute a SQL query2",
+      "credentials": {
+        "postgres": {
+          "id": "arTMyAqfoRECzE1C",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        2320,
+        -80
+      ],
+      "id": "8ccdef18-ce16-4f72-8a1c-6dd0a1290739",
+      "name": "When chat message received",
+      "webhookId": "addc37c7-5b82-417b-8b57-2f11252c180f"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=={{\n  \"You are a banking audit assistant.\\n\\n\" +\n  \"Answer the user's question using ONLY the retrieved information below.\\n\" +\n  \"If the retrieved information does not contain enough evidence, clearly say that the information is not available in the retrieved documents.\\n\" +\n  \"Do not invent facts or numbers.\\n\\n\" +\n  \"QUESTION:\\n\" +\n  $('Webhook').item.json.body.question +\n  \"\\n\\nRETRIEVED INFORMATION:\\n\" +\n  $json.context\n}}",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        2704,
+        -80
+      ],
+      "id": "467f0f87-c7c3-4889-8e9a-dcffb11c71a7",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": "qwen3:8b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        3088,
+        -80
+      ],
+      "id": "12fb2016-b48f-489d-9916-d327d35263b9",
+      "name": "Ollama Chat Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "rCHNlDNXB4rKzu4U",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:11434/api/embeddings",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"nomic-embed-text\",\n  \"prompt\": \"{{ $json.body?.question || $json.chatInput }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        2480,
+        128
+      ],
+      "id": "60cc8391-6e70-4440-918f-e91f5903e78a",
+      "name": "HTTP Request2"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return {\n  json: {\n    question: $('Webhook').item.json.body.question,\n    embedding: $json.embedding\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2704,
+        256
+      ],
+      "id": "12a73b4b-c80c-4e65-94eb-f02a3b21e2f4",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  id,\n  content,\n  metadata,\n  1 - (embedding <=> $1::vector) AS similarity\nFROM rag_documents\nORDER BY embedding <=> $1::vector\nLIMIT 5;",
+        "options": {
+          "queryReplacement": "={{ JSON.stringify($json.embedding) }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        2992,
+        256
+      ],
+      "id": "a4648817-8251-428d-bcdc-73e7c616ffcb",
+      "name": "Execute a SQL query3",
+      "credentials": {
+        "postgres": {
+          "id": "arTMyAqfoRECzE1C",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fileSelector": "/files/*.pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        112
+      ],
+      "id": "5ea1df3f-05af-4b28-a152-bab149f5df79",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        464,
+        112
+      ],
+      "id": "fbf4e60e-201c-4b65-83b9-e04c59aaa698",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst files = $('Read/Write Files from Disk').all();\n\nconst chunkSize = 1000;\nconst overlap = 200;\n\nconst chunks = [];\n\nfor (let index = 0; index < items.length; index++) {\n  const item = items[index];\n  const file = files[index];\n\n  const text = item.json.text || \"\";\n\n  const source =\n    file?.binary?.data?.fileName ||\n    file?.json?.fileName ||\n    item?.json?.info?.Title ||\n    `Document_${index + 1}`;\n\n  for (let i = 0; i < text.length; i += chunkSize - overlap) {\n    const chunk = text.slice(i, i + chunkSize).trim();\n\n    if (chunk) {\n      chunks.push({\n        json: {\n          content: chunk,\n          source: source\n        }\n      });\n    }\n  }\n}\n\nreturn chunks;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        688,
+        112
+      ],
+      "id": "6a4f026e-1b74-4c5e-8263-510a429c8188",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:11434/api/embeddings",
+        "sendBody": true,
+        "specifyBody": "=json",
+        "bodyParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "jsonBody": "={{ JSON.stringify({\n  model: \"nomic-embed-text\",\n  prompt: $json.content\n}) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        912,
+        112
+      ],
+      "id": "ce5b50b2-768b-43ed-addd-dba9f1b27d89",
+      "name": "HTTP Request3"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map((item, index) => {\n  const sourceChunk = $('Code in JavaScript2').all()[index];\n\n  return {\n    json: {\n      content: sourceChunk.json.content,\n      source: sourceChunk.json.source,\n      embedding: item.json.embedding\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1088,
+        304
+      ],
+      "id": "9634b703-2fc5-43f4-84fc-6349bffd1744",
+      "name": "Code in JavaScript3"
+    },
+    {
+      "parameters": {
+        "jsCode": "const chunks = $input.all();\n\nreturn [\n  {\n    json: {\n      context: chunks\n        .map((item, index) => \n          `DOCUMENT CHUNK ${index + 1}:\\n${item.json.content}`\n        )\n        .join('\\n\\n')\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3216,
+        256
+      ],
+      "id": "d957ae31-f7a5-4c50-97d7-26ac143e2019",
+      "name": "Code in JavaScript4"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "TRUNCATE TABLE rag_documents RESTART IDENTITY;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        1568,
+        -80
+      ],
+      "id": "cc4a4719-587a-41cf-b3ae-42513ce85553",
+      "name": "clear rag document",
+      "credentials": {
+        "postgres": {
+          "id": "arTMyAqfoRECzE1C",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "bankaudit/rag",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        2080,
+        336
+      ],
+      "id": "3bd41612-71d9-4422-801a-8686966f99ee",
+      "name": "Webhook",
+      "webhookId": "8bd479ac-84a1-4766-8185-e4e4c475d81d"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"answer\": \"{{ $json.text }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        3024,
+        64
+      ],
+      "id": "0f4d69ba-8397-4a7e-92dc-db88b8076cef",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query3": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request3": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript3": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript4": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "clear rag document": {
+      "main": [
+        []
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "f37124dd-b157-4ea3-9e27-be338f7c1e71",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0a00998d5f228cc454d92aff7c5026b92cb4ad3b368dd7b59f2542498e35d85b"
+  },
+  "nodeGroups": [],
+  "id": "BdI74Chffmv1x1RR",
+  "tags": []
+}
