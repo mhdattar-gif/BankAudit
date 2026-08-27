@@ -81,10 +81,6 @@ export function Header({ onMenu }: { onMenu: () => void }) {
         </h1>
       </div>
 
-      <span className="hidden items-center gap-1.5 rounded-md border border-border bg-muted px-2 py-1 text-[11px] text-muted-foreground sm:inline-flex">
-        Demo Mode
-      </span>
-
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
@@ -147,11 +143,6 @@ export function Header({ onMenu }: { onMenu: () => void }) {
           </ul>
         </PopoverContent>
       </Popover>
-
-      <span className="hidden items-center gap-1.5 rounded-md border border-primary/25 bg-accent px-2.5 py-1 text-[11px] font-medium text-accent-foreground md:inline-flex">
-        <span className="size-2 rounded-full bg-low pulse-dot" aria-hidden />
-        AI System Online
-      </span>
 
       <DropdownMenu>
         <DropdownMenuTrigger className="flex items-center gap-2 rounded-md px-1.5 py-1 transition-colors hover:bg-muted">

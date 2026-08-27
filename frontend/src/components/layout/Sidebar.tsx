@@ -6,13 +6,11 @@ import {
   FileText,
   LayoutDashboard,
   ListChecks,
-  Lock,
   Settings,
   ShieldAlert,
   ShieldCheck,
   X,
 } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -72,32 +70,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
         {secondary.map((n) => item(n.to, n.label, n.Icon))}
       </nav>
 
-      <div className="space-y-3 border-t border-white/10 p-3">
-        <Popover>
-          <PopoverTrigger asChild>
-            <button className="flex w-full items-center gap-2 rounded-md border border-white/10 px-2.5 py-2 text-left text-[11px] text-navy-muted transition-colors hover:bg-navy-soft">
-              <span className="size-2 shrink-0 rounded-full bg-low pulse-dot" aria-hidden />
-              <span className="flex-1">
-                <span className="block font-medium text-navy-foreground">On-Premise AI</span>
-                Data processing: Local
-              </span>
-              <Lock className="size-3.5" aria-hidden />
-            </button>
-          </PopoverTrigger>
-          <PopoverContent align="start" side="top" className="w-72">
-            <p className="text-sm font-semibold text-foreground">Prototype Configuration</p>
-            <ul className="mt-2 space-y-1.5 text-xs text-muted-foreground">
-              <li>• Local AI processing (Ollama runtime)</li>
-              <li>• No external document sharing</li>
-              <li>• Evidence traceability on every finding</li>
-              <li>• Controlled access by audit role</li>
-            </ul>
-            <p className="mt-2 border-t border-border pt-2 text-[11px] text-muted-foreground">
-              Displayed configuration is mock data for demonstration purposes.
-            </p>
-          </PopoverContent>
-        </Popover>
-
+      <div className="border-t border-white/10 p-3">
         <div className="flex items-center gap-2.5 rounded-md px-1 py-1">
           <span className="grid size-8 shrink-0 place-items-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
             MS

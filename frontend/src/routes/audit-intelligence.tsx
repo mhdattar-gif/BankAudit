@@ -1,15 +1,12 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowDownRight, ArrowUpRight, Sparkles } from "lucide-react";
+import { createFileRoute } from "@tanstack/react-router";
+import { ArrowDownRight, ArrowUpRight } from "lucide-react";
 import { PageHeader, Panel } from "@/components/audit/SectionHeader";
-import { RiskBadge } from "@/components/audit/RiskBadge";
-import { RootCauseChain } from "@/components/audit/RootCauseChain";
 import {
   BranchRiskChart,
   FindingTrendChart,
   RiskDistributionChart,
 } from "@/components/audit/charts";
 import { getAnalytics } from "@/services/auditService";
-import { useAppStore } from "@/store/appStore";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/audit-intelligence")({
@@ -42,8 +39,6 @@ const heatColor = (v: number) =>
 
 function AuditIntelligence() {
   const { riskDomains, sectorHeatmap } = getAnalytics();
-  const { findings } = useAppStore();
-  const top = [...findings].sort((a, b) => b.score - a.score)[0];
 
   return (
     <div className="space-y-5">
@@ -135,38 +130,6 @@ function AuditIntelligence() {
           </table>
         </div>
       </Panel>
-
-      {top && (
-        <Panel
-          title="Root-Cause Spotlight"
-          description={`${top.ref} ${top.title} — highest scoring open finding`}
-          bodyClassName="grid gap-4 lg:grid-cols-[1fr_1fr]"
-        >
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <RiskBadge risk={top.risk} />
-              <span className="num text-xs text-muted-foreground">Score {top.score}/100</span>
-            </div>
-            <div className="rounded-lg border border-primary/25 bg-accent/60 p-3">
-              <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-accent-foreground">
-                <Sparkles className="size-3.5" aria-hidden />
-                Analysis
-              </p>
-              <p className="mt-2 text-[13px] leading-relaxed text-foreground">
-                {top.rootCause.potentialCause}
-              </p>
-            </div>
-            <Link
-              to="/findings/$id"
-              params={{ id: top.id }}
-              className="inline-flex text-xs font-medium text-primary hover:underline"
-            >
-              Open full root-cause analysis
-            </Link>
-          </div>
-          <RootCauseChain steps={top.causeChain} />
-        </Panel>
-      )}
     </div>
   );
 }

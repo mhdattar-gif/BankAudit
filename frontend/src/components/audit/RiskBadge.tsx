@@ -1,12 +1,11 @@
-import { AlertOctagon, AlertTriangle, CheckCircle2, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { RiskLevel } from "@/lib/types";
 
-const map: Record<RiskLevel, { cls: string; Icon: typeof Info }> = {
-  Critical: { cls: "bg-critical-soft text-critical border-critical/30", Icon: AlertOctagon },
-  High: { cls: "bg-high-soft text-high border-high/30", Icon: AlertTriangle },
-  Medium: { cls: "bg-medium-soft text-medium border-medium/40", Icon: Info },
-  Low: { cls: "bg-low-soft text-low border-low/30", Icon: CheckCircle2 },
+const map: Record<RiskLevel, string> = {
+  Critical: "bg-red-50 text-red-700 border-red-200",
+  High: "bg-amber-50 text-amber-800 border-amber-200",
+  Medium: "bg-yellow-50 text-yellow-800 border-yellow-200",
+  Low: "bg-emerald-50 text-emerald-800 border-emerald-200",
 };
 
 export function RiskBadge({
@@ -18,17 +17,16 @@ export function RiskBadge({
   size?: "sm" | "md";
   className?: string;
 }) {
-  const { cls, Icon } = map[risk];
+  const cls = map[risk] ?? "bg-muted text-muted-foreground border-border";
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-md border font-semibold uppercase tracking-wide",
-        size === "sm" ? "px-2 py-0.5 text-[11px]" : "px-2.5 py-1 text-xs",
+        "inline-flex items-center justify-center rounded-[4px] border font-semibold uppercase tracking-wide",
+        size === "sm" ? "px-1.5 py-0.5 text-[11px]" : "px-2 py-0.5 text-xs",
         cls,
         className,
       )}
     >
-      <Icon className="size-3.5 shrink-0" aria-hidden />
       {risk}
     </span>
   );
