@@ -8,7 +8,6 @@ import {
   ListChecks,
   Settings,
   ShieldAlert,
-  ShieldCheck,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -55,9 +54,11 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <div className="flex h-full flex-col bg-navy">
       <div className="flex items-center gap-2.5 border-b border-white/10 px-4 py-4">
-        <span className="grid size-9 shrink-0 place-items-center rounded-md bg-primary">
-          <ShieldCheck className="size-5 text-primary-foreground" aria-hidden />
-        </span>
+        <img
+          src="/auditai-logo.png"
+          alt="AuditAI Logo"
+          className="size-9 shrink-0 rounded-md object-contain"
+        />
         <div>
           <p className="text-sm font-semibold tracking-wide text-navy-foreground">AUDITAI</p>
           <p className="text-[11px] text-navy-muted">Internal Audit Intelligence</p>
